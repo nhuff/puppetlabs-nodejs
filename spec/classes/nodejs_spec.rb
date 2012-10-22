@@ -121,5 +121,22 @@ describe 'nodejs', :type => :class do
       'source' => 'http://pkg.puppetlabs.com/nodejs-release.noarch.rpm'
     }) }
   end
+  describe 'when with_repo is false' do
+    let :facts do 
+      {
+        :operatingsystem => 'RedHat'
+      }
+    end
+
+    let :params do
+      {
+        :with_repo => false
+      }
+    end
+
+    it {
+      should_not contain_package('nodejs-stable-release')
+    }
+  end
 end
 

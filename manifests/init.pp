@@ -11,54 +11,56 @@
 class nodejs(
   $dev_package = false,
   $proxy       = '',
-  $pkg_src     = ''
+  $with_repo   = true,
+  $pkg_src     = '',
 ) inherits nodejs::params {
 
-  case $::operatingsystem {
-    'Debian': {
-      include 'apt'
+  if $with_repo {
+    case $::operatingsystem {
+      'Debian': {
+        include 'apt'
 
-      apt::source { 'sid':
-        location    => 'http://ftp.us.debian.org/debian/',
-        release     => 'sid',
-        repos       => 'main',
-        pin         => 100,
-        include_src => false,
-        before      => Anchor['nodejs::repo'],
+        apt::source { 'sid':
+          location    => 'http://ftp.us.debian.org/debian/',
+          release     => 'sid',
+          repos       => 'main',
+          pin         => 100,
+          include_src => false,
+          before      => Anchor['nodejs::repo'],
+        }
+
       }
 
-    }
+      'Ubuntu': {
+        include 'apt'
 
-    'Ubuntu': {
-      include 'apt'
-
-      # Only use PPA when necessary.
-      if $::lsbdistcodename != 'Precise'{
-        apt::ppa { 'ppa:chris-lea/node.js':
-          before => Anchor['nodejs::repo'],
+        # Only use PPA when necessary.
+        if $::lsbdistcodename != 'Precise'{
+          apt::ppa { 'ppa:chris-lea/node.js':
+            before => Anchor['nodejs::repo'],
+          }
         }
       }
-    }
 
-    'Fedora', 'RedHat', 'CentOS', 'Amazon': {
-      $r_pkg_src = $pkg_src ? {
-        ''      => $nodejs::params::pkg_src,
-        default => $pkg_src
+      'Fedora', 'RedHat', 'CentOS', 'Amazon': {
+        $r_pkg_src = $pkg_src ? {
+          ''      => $nodejs::params::pkg_src,
+          default => $pkg_src
+        }
+
+        package { 'nodejs-stable-release':
+          ensure   => present,
+          source   => $r_pkg_src,
+          provider => 'rpm',
+          before   => Anchor['nodejs::repo'],
+        }
       }
 
-      package { 'nodejs-stable-release':
-        ensure   => present,
-        source   => $r_pkg_src,
-        provider => 'rpm',
-        before   => Anchor['nodejs::repo'],
+      default: {
+        fail("Class nodejs does not support ${::operatingsystem}")
       }
-    }
-
-    default: {
-      fail("Class nodejs does not support ${::operatingsystem}")
     }
   }
-
   # anchor resource provides a consistent dependency for prereq.
   anchor { 'nodejs::repo': }
 
